@@ -41,13 +41,16 @@ class HTTPClient(object):
         return None
 
     def get_code(self, data):
-        return None
+        code = data.splitlines()[0].split()[1]
+        return code
 
     def get_headers(self,data):
         return None
 
     def get_body(self, data):
-        return None
+        body_index = data.find("\r\n\r\n")
+        body = data[body_index:].lstrip("\r\n")
+        return body
     
     def sendall(self, data):
         self.socket.sendall(data.encode('utf-8'))
@@ -70,6 +73,24 @@ class HTTPClient(object):
     def GET(self, url, args=None):
         code = 500
         body = ""
+        location = urllib.parse.urlparse(url)
+        print (location.netloc, location.hostname, location.port)
+        if location.port != None:
+            self.connect(location.hostname, int(location.port))
+        else:
+            print("No port provided, default 80")
+            self.connect(location.hostname, 80)
+        request = "GET " + location.path + " HTTP/1.1\r\nHost: " + location.netloc + "\r\nAccept: */*\r\n\r\n"
+        #print("Sending: \n" + request)
+        self.sendall(request)
+        response = self.recvall(self.socket)
+        code = self.get_code(response)
+        body = self.get_body(response)
+        # print(response)
+        print("Status Code:\r\n" + code)
+        print("Body Received:\r\n" + body)
+        self.close()
+        
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
