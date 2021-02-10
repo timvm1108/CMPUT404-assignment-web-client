@@ -47,12 +47,12 @@ class HTTPClient(object):
     def get_headers(self,data):
         body_index = data.find("\r\n\r\n")
         status_index = data.find("\r\n")
-        headers = data[status_index:body_index].lstrip("\r\n")
+        headers = data[status_index:body_index]
         return headers
 
     def get_body(self, data):
         body_index = data.find("\r\n\r\n")
-        body = data[body_index:].lstrip("\r\n")
+        body = data[body_index:]
         return body
     
     def sendall(self, data):
@@ -77,14 +77,27 @@ class HTTPClient(object):
         code = 500
         body = ""
         location = urllib.parse.urlparse(url)
-        print (location.netloc, location.hostname, location.port)
+        #print ("Location info: " + location.netloc + location.hostname + location.port)
+        final_host = ''
+        if location.netloc == '':
+            final_host = location.path.split("/")[0]
+            final_path = location.path[location.path.index("/"):]
+        else:
+            if location.path == '':
+                final_path = '/'
+            else:
+                final_path = location.path
+            final_host = location.hostname
+        print(final_host, location.netloc)
+
         if location.port != None:
-            self.connect(location.hostname, int(location.port))
+            self.connect(final_host, int(location.port))
         else:
             print("No port provided, default 80")
-            self.connect(location.hostname, 80)
-        request = "GET " + location.path + " HTTP/1.1\r\nHost: " + location.netloc + "\r\nAccept: */*\r\n\r\n"
-        #print("Sending: \n" + request)
+            self.connect(final_host, 80)
+        
+        request = "GET " + final_path + " HTTP/1.1\r\nHost: " + final_host + "\r\nAccept: */*\r\nConnection: close\r\n\r\n"
+        print("Sending: \n" + request)
         self.sendall(request)
         print("Sent Request, Waiting for Response.")
         response = self.recvall(self.socket)
@@ -108,13 +121,21 @@ class HTTPClient(object):
             self.connect(location.hostname, int(location.port))
         else:
             self.connect(location.hostname, 80)
-        request = "POST " + location.path + " HTTP/1.1\r\nHost: " + location.netloc + "\r\n"
+        if location.path == '':
+            final_path = '/'
+        else:
+            final_path = location.path
+        request = "POST " + final_path + " HTTP/1.1\r\nHost: " + location.netloc + "\r\nConnection: close\r\n"
         if args != None:
             content = ''
             for item in args.items():
                 content += item[0] + "=" + item[1] + "&"
             content.rstrip("&")
-            request += "Content-Type: application/x-www-form-urlencoded\r\nContent-Length: " + len(content) + "\r\n\r\n" + content
+            print(content)
+            request += "Content-Type: application/x-www-form-urlencoded\r\nContent-Length: " + str(len(content)) + "\r\n\r\n" + content
+        else:
+            request += "Content-Length: 0\r\n\r\n"
+        print(request)
         self.sendall(request)
         response = self.recvall(self.socket)
 
