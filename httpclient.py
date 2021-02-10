@@ -42,10 +42,13 @@ class HTTPClient(object):
 
     def get_code(self, data):
         code = data.splitlines()[0].split()[1]
-        return code
+        return int(code)
 
     def get_headers(self,data):
-        return None
+        body_index = data.find("\r\n\r\n")
+        status_index = data.find("\r\n")
+        headers = data[status_index:body_index].lstrip("\r\n")
+        return headers
 
     def get_body(self, data):
         body_index = data.find("\r\n\r\n")
@@ -83,11 +86,14 @@ class HTTPClient(object):
         request = "GET " + location.path + " HTTP/1.1\r\nHost: " + location.netloc + "\r\nAccept: */*\r\n\r\n"
         #print("Sending: \n" + request)
         self.sendall(request)
+        print("Sent Request, Waiting for Response.")
         response = self.recvall(self.socket)
         code = self.get_code(response)
         body = self.get_body(response)
+        headers = self.get_headers(response)
         # print(response)
-        print("Status Code:\r\n" + code)
+        print("Status Code:\r\n" + str(code))
+        print("Headers Received:\r\n" + headers)
         print("Body Received:\r\n" + body)
         self.close()
         
@@ -96,6 +102,31 @@ class HTTPClient(object):
     def POST(self, url, args=None):
         code = 500
         body = ""
+
+        location = urllib.parse.urlparse(url)
+        if location.port != None:
+            self.connect(location.hostname, int(location.port))
+        else:
+            self.connect(location.hostname, 80)
+        request = "POST " + location.path + " HTTP/1.1\r\nHost: " + location.netloc + "\r\n"
+        if args != None:
+            content = ''
+            for item in args.items():
+                content += item[0] + "=" + item[1] + "&"
+            content.rstrip("&")
+            request += "Content-Type: application/x-www-form-urlencoded\r\nContent-Length: " + len(content) + "\r\n\r\n" + content
+        self.sendall(request)
+        response = self.recvall(self.socket)
+
+        code = self.get_code(response)
+        body = self.get_body(response)
+        headers = self.get_headers(response)
+        # print(response)
+        print("Status Code:\r\n" + str(code))
+        print("Headers Received:\r\n" + headers)
+        print("Body Received:\r\n" + body)
+        self.close()
+        
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
