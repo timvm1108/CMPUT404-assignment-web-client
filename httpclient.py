@@ -150,7 +150,7 @@ class HTTPClient(object):
                 self.connect(final_host, 80)
             
             # Build beginning of request headers
-            request = "POST " + final_path + " HTTP/1.1\r\nHost: " + location.netloc + "\r\nConnection: close\r\n"
+            request = "POST " + final_path + " HTTP/1.1\r\nHost: " + location.netloc + "\r\nConnection: close\r\nAccept-Charset: utf-8\r\n"
             
             # If arguments were included in the POST, translate them into a query string format and append relevant information to the headers
             if args != None:
