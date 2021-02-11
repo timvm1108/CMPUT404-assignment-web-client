@@ -24,6 +24,7 @@ import re
 # you may use urllib to encode data appropriately
 import urllib.parse
 
+# Make use of information from urllib documentation, found at: https://docs.python.org/3/library/urllib.parse.html#urllib.parse.quote
 def help():
     print("httpclient.py [GET/POST] [URL]\n")
 
